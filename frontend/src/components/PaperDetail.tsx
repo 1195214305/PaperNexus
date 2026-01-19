@@ -6,7 +6,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { useStore } from '../store/useStore'
-import { askPaperQuestion, generatePoster } from '../utils/api'
+import { askPaperQuestion, generatePoster, checkTaskStatus } from '../utils/api'
 
 export default function PaperDetail() {
   const { papers, selectedPaperId, deletePaper, chats, addMessage, settings } = useStore()
@@ -63,23 +63,83 @@ export default function PaperDetail() {
 
     setGeneratingPoster(true)
     try {
+      // 第一步：调用生成接口，获取任务ID
       const result = await generatePoster(paper.id, paper.summary.overview, paper.title, settings)
-      if (result.success && result.data) {
-        // 更新paper的summary，添加posterUrl
+
+      if (!result.success || !result.data) {
+        alert('生成失败: ' + (result.error || '未知错误'))
+        setGeneratingPoster(false)
+        return
+      }
+
+      // 如果直接返回了图片URL（同步模式）
+      if (result.data.posterUrl) {
         const { updatePaper } = useStore.getState()
         updatePaper(paper.id, {
           summary: {
-            ...paper.summary,
+            ...paper.summary!,
             posterUrl: result.data.posterUrl,
           },
         })
         alert('海报生成成功！请向下滚动查看')
-      } else {
-        alert('生成失败: ' + (result.error || '未知错误'))
+        setGeneratingPoster(false)
+        return
       }
+
+      // 异步模式：获取任务ID，开始轮询
+      const taskId = result.data.taskId
+      if (!taskId) {
+        alert('生成失败: 未获取到任务ID')
+        setGeneratingPoster(false)
+        return
+      }
+
+      // 第二步：轮询任务状态（最多30次，每次间隔2秒）
+      let attempts = 0
+      const maxAttempts = 30
+      const pollInterval = 2000 // 2秒
+
+      const poll = async () => {
+        if (attempts >= maxAttempts) {
+          alert('海报生成超时，请稍后重试')
+          setGeneratingPoster(false)
+          return
+        }
+
+        attempts++
+        const statusResult = await checkTaskStatus(taskId, settings)
+
+        if (statusResult.success && statusResult.data) {
+          if (statusResult.data.status === 'completed' && statusResult.data.posterUrl) {
+            // 任务完成，更新海报URL
+            const { updatePaper } = useStore.getState()
+            updatePaper(paper.id, {
+              summary: {
+                ...paper.summary!,
+                posterUrl: statusResult.data.posterUrl,
+              },
+            })
+            alert('海报生成成功！请向下滚动查看')
+            setGeneratingPoster(false)
+          } else if (statusResult.data.status === 'pending') {
+            // 任务进行中，继续轮询
+            setTimeout(poll, pollInterval)
+          } else {
+            // 任务失败
+            alert('海报生成失败')
+            setGeneratingPoster(false)
+          }
+        } else {
+          // 查询失败
+          alert('查询任务状态失败: ' + (statusResult.error || '未知错误'))
+          setGeneratingPoster(false)
+        }
+      }
+
+      // 开始轮询
+      setTimeout(poll, pollInterval)
     } catch (error) {
       alert('生成失败: ' + (error instanceof Error ? error.message : '未知错误'))
-    } finally {
       setGeneratingPoster(false)
     }
   }

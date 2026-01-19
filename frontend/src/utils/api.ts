@@ -67,13 +67,13 @@ export async function askPaperQuestion(
   }
 }
 
-// 生成学术海报
+// 生成学术海报（返回任务ID）
 export async function generatePoster(
   paperId: string,
   summary: string,
   title: string,
   settings: { qwenApiKey: string }
-): Promise<ApiResponse<{ posterUrl: string }>> {
+): Promise<ApiResponse<{ taskId?: string; posterUrl?: string; status: string }>> {
   try {
     const response = await fetch(`${API_BASE}/poster`, {
       method: 'POST',
@@ -98,6 +98,37 @@ export async function generatePoster(
     return {
       success: false,
       error: error instanceof Error ? error.message : '生成海报失败',
+    }
+  }
+}
+
+// 查询任务状态
+export async function checkTaskStatus(
+  taskId: string,
+  settings: { qwenApiKey: string }
+): Promise<ApiResponse<{ status: string; posterUrl?: string }>> {
+  try {
+    const response = await fetch(`${API_BASE}/task-status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        taskId,
+        apiKey: settings.qwenApiKey,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('查询任务状态失败:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '查询任务状态失败',
     }
   }
 }

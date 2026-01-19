@@ -6,6 +6,7 @@
 import analyzeHandler from './api/analyze.js'
 import askHandler from './api/ask.js'
 import posterHandler from './api/poster.js'
+import taskStatusHandler from './api/task-status.js'
 import healthHandler from './api/health.js'
 
 async function fetch(request) {
@@ -23,6 +24,10 @@ async function fetch(request) {
 
   if (path === '/api/poster') {
     return posterHandler(request)
+  }
+
+  if (path === '/api/task-status') {
+    return taskStatusHandler(request)
   }
 
   if (path === '/api/health') {

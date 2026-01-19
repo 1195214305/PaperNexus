@@ -3,7 +3,7 @@
  * 路径: /api/poster
  * 功能: 基于论文摘要生成学术海报图片（使用千问图像生成模型）
  *
- * 技术来源: 学习自 Zotero-AI-Butler 的图像生成功能
+ * 优化策略：立即返回任务ID，让前端轮询状态，避免边缘函数超时
  */
 
 export default async function handler(request) {
@@ -52,7 +52,7 @@ export default async function handler(request) {
 
 风格：学术、专业、简洁、现代`
 
-    // 调用千问图像生成 API (wanx-v1)
+    // 调用千问图像生成 API (wanx-v1) - 异步模式
     const imageResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
       method: 'POST',
       headers: {
@@ -66,9 +66,9 @@ export default async function handler(request) {
           prompt: imagePrompt,
         },
         parameters: {
-          style: '<auto>',  // 自动风格
-          size: '1024*1024',  // 图片尺寸
-          n: 1,  // 生成1张图片
+          style: '<auto>',
+          size: '1024*1024',
+          n: 1,
         },
       }),
     })
@@ -80,62 +80,29 @@ export default async function handler(request) {
 
     const imageResult = await imageResponse.json()
 
-    // 检查是否是异步任务
+    // 立即返回任务ID，让前端轮询
     if (imageResult.output && imageResult.output.task_id) {
-      // 异步任务，需要轮询获取结果
-      const taskId = imageResult.output.task_id
-      let attempts = 0
-      const maxAttempts = 30  // 最多等待30秒
-
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000))  // 等待1秒
-
-        const statusResponse = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            taskId: imageResult.output.task_id,
+            status: 'pending',
           },
-        })
-
-        if (!statusResponse.ok) {
-          throw new Error('查询任务状态失败')
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-
-        const statusResult = await statusResponse.json()
-
-        if (statusResult.output && statusResult.output.task_status === 'SUCCEEDED') {
-          // 任务成功，返回图片URL
-          const imageUrl = statusResult.output.results[0].url
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              data: {
-                posterUrl: imageUrl,
-                taskId: taskId,
-              },
-            }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          )
-        } else if (statusResult.output && statusResult.output.task_status === 'FAILED') {
-          throw new Error('图像生成失败')
-        }
-
-        attempts++
-      }
-
-      throw new Error('图像生成超时')
+      )
     } else if (imageResult.output && imageResult.output.results) {
-      // 同步返回结果
+      // 同步返回结果（极少情况）
       const imageUrl = imageResult.output.results[0].url
-
       return new Response(
         JSON.stringify({
           success: true,
           data: {
             posterUrl: imageUrl,
+            status: 'completed',
           },
         }),
         {

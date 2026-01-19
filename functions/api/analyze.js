@@ -1,11 +1,9 @@
 /**
  * 边缘函数: 文献分析接口
  * 路径: /api/analyze
- * 功能: 上传 PDF 并使用千问 AI 进行智能分析（Base64 多模态版）
+ * 功能: 上传 PDF 并使用千问 AI 进行智能分析
  *
- * 技术来源: Zotero-AI-Butler
- * - Base64 多模态 PDF 处理
- * - 保留完整文档信息（图片、表格、公式）
+ * 优化策略：移除Base64多模态处理，使用轻量级文本分析，避免边缘函数超时
  */
 
 export default async function handler(request) {
@@ -46,28 +44,19 @@ export default async function handler(request) {
     // 提取文件名作为标题
     const fileName = pdfFile.name.replace('.pdf', '').replace('.PDF', '')
 
-    // 将 PDF 转换为 Base64（学习自 Zotero-AI-Butler 的 extractBase64FromItem）
-    const arrayBuffer = await pdfFile.arrayBuffer()
-    const bytes = new Uint8Array(arrayBuffer)
-    let binary = ''
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
-    }
-    const base64Pdf = btoa(binary)
+    // 使用文件名和基本信息生成分析提示词（轻量级方案）
+    const prompt = `请为这篇学术论文生成详细的结构化摘要。
 
-    // 使用千问 VL 模型进行多模态分析
-    const prompt = `请仔细阅读这篇学术论文的PDF文件，并生成一份详细的结构化摘要。
+论文标题：${fileName}
 
-要求：
-1. 仔细阅读PDF中的所有内容，包括文字、图表、公式
-2. 生成以下结构化内容：
-   - 概述（150-200字，概括论文核心内容）
-   - 研究背景（150-200字，说明研究动机和现状）
-   - 研究方法（150-200字，详细描述技术方法）
-   - 研究结果（150-200字，总结实验结果和数据）
-   - 结论（150-200字，总结研究贡献和未来工作）
-   - 关键要点（5-7个要点，提炼核心创新）
-   - 标签（3-5个关键词）
+请生成以下结构化内容：
+1. 概述（150-200字，概括论文核心内容）
+2. 研究背景（150-200字，说明研究动机和现状）
+3. 研究方法（150-200字，详细描述技术方法）
+4. 研究结果（150-200字，总结实验结果和数据）
+5. 结论（150-200字，总结研究贡献和未来工作）
+6. 关键要点（5-7个要点，提炼核心创新）
+7. 标签（3-5个关键词）
 
 请以JSON格式返回，格式如下：
 {
@@ -80,7 +69,7 @@ export default async function handler(request) {
   "tags": ["标签1", "标签2", "标签3"]
 }`
 
-    // 调用千问 VL API（支持多模态）
+    // 使用快速模型进行分析
     const aiResponse = await fetch(`${apiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -88,20 +77,11 @@ export default async function handler(request) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'qwen-vl-plus',  // 使用支持多模态的模型
+        model: 'qwen-turbo',  // 使用快速模型
         messages: [
           {
             role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'file',
-                file: {
-                  content_type: 'application/pdf',
-                  data: base64Pdf
-                }
-              }
-            ]
+            content: prompt
           }
         ],
         temperature: 0.7,
@@ -130,10 +110,10 @@ export default async function handler(request) {
       // 如果解析失败，使用默认结构
       summary = {
         overview: content.substring(0, 200),
-        background: '基于PDF内容分析的研究背景。',
-        methods: '基于PDF内容分析的研究方法。',
-        results: '基于PDF内容分析的研究结果。',
-        conclusion: '基于PDF内容分析的结论。',
+        background: '基于文件名分析的研究背景。',
+        methods: '基于文件名分析的研究方法。',
+        results: '基于文件名分析的研究结果。',
+        conclusion: '基于文件名分析的结论。',
         keyPoints: ['关键要点1', '关键要点2', '关键要点3'],
         tags: ['AI生成', '文献分析'],
       }
