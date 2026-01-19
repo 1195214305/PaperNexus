@@ -23,6 +23,7 @@ export interface PaperSummary {
   keyPoints: string[]
   generatedAt: string
   posterUrl?: string
+  posterContent?: string
 }
 
 // 用户设置

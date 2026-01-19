@@ -72,7 +72,7 @@ export async function generatePoster(
   paperId: string,
   summary: string,
   settings: { qwenApiKey: string }
-): Promise<ApiResponse<{ posterUrl: string }>> {
+): Promise<ApiResponse<{ content: string }>> {
   try {
     const response = await fetch(`${API_BASE}/poster`, {
       method: 'POST',

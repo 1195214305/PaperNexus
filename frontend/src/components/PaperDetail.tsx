@@ -65,7 +65,15 @@ export default function PaperDetail() {
     try {
       const result = await generatePoster(paper.id, paper.summary.overview, settings)
       if (result.success && result.data) {
-        alert('海报生成成功！')
+        // 更新paper的summary，添加posterContent
+        const { updatePaper } = useStore.getState()
+        updatePaper(paper.id, {
+          summary: {
+            ...paper.summary,
+            posterContent: result.data.content,
+          },
+        })
+        alert('海报生成成功！请向下滚动查看')
       } else {
         alert('生成失败: ' + (result.error || '未知错误'))
       }
@@ -144,19 +152,8 @@ export default function PaperDetail() {
 
         {paper.status === 'completed' && paper.summary && (
           <div className="space-y-6">
-            {/* 学术海报 */}
-            {paper.summary.posterUrl && (
-              <div className="paper-card p-4">
-                <img
-                  src={paper.summary.posterUrl}
-                  alt="学术海报"
-                  className="w-full"
-                />
-              </div>
-            )}
-
             {/* 生成海报按钮 */}
-            {!paper.summary.posterUrl && (
+            {!paper.summary.posterContent && (
               <button
                 onClick={handleGeneratePoster}
                 disabled={generatingPoster}
@@ -174,6 +171,24 @@ export default function PaperDetail() {
                   </>
                 )}
               </button>
+            )}
+
+            {/* 学术海报内容 */}
+            {paper.summary.posterContent && (
+              <div className="paper-card p-6 bg-stone-50">
+                <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center">
+                  <ImageIcon size={20} className="mr-2" />
+                  学术海报
+                </h3>
+                <div className="markdown-body">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {paper.summary.posterContent}
+                  </ReactMarkdown>
+                </div>
+              </div>
             )}
 
             {/* AI 摘要 */}

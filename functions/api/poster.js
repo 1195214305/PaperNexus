@@ -75,12 +75,11 @@ ${summary}
     const aiResult = await aiResponse.json()
     const posterContent = aiResult.choices[0].message.content
 
-    // 返回海报内容（实际项目中可以调用图像生成 API）
+    // 返回海报内容（Markdown格式，前端直接渲染）
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          posterUrl: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(posterContent)))}`,
           content: posterContent,
         },
       }),
