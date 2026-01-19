@@ -67,12 +67,12 @@ export async function askPaperQuestion(
   }
 }
 
-// 生成学术海报（返回任务ID）
+// 生成学术概念图（返回任务ID）
 export async function generatePoster(
   paperId: string,
   summary: string,
   title: string,
-  settings: { qwenApiKey: string }
+  settings: { qwenApiKey: string; qwenApiUrl: string }
 ): Promise<ApiResponse<{ taskId?: string; posterUrl?: string; status: string }>> {
   try {
     const response = await fetch(`${API_BASE}/poster`, {
@@ -85,6 +85,7 @@ export async function generatePoster(
         summary,
         title,
         apiKey: settings.qwenApiKey,
+        apiUrl: settings.qwenApiUrl,
       }),
     })
 
@@ -94,10 +95,10 @@ export async function generatePoster(
 
     return await response.json()
   } catch (error) {
-    console.error('生成海报失败:', error)
+    console.error('生成学术概念图失败:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '生成海报失败',
+      error: error instanceof Error ? error.message : '生成学术概念图失败',
     }
   }
 }
