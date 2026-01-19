@@ -46,7 +46,7 @@ export default function PaperList() {
 
       // 第二步：将提取的文本发送到后端进行AI分析
       const result = await uploadAndAnalyzePaper(
-        extractionResult.title,
+        extractionResult.title || file.name.replace('.pdf', ''),
         truncatedText,
         extractionResult.pageCount,
         settings

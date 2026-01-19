@@ -45,7 +45,7 @@ export async function extractTextFromPdf(file: File): Promise<PdfExtractionResul
 
     // 获取PDF元数据
     const metadata = await pdf.getMetadata()
-    const title = metadata.info?.Title || file.name.replace('.pdf', '')
+    const title = (metadata.info as any)?.Title || file.name.replace('.pdf', '')
 
     return {
       text: fullText.trim(),
