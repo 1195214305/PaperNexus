@@ -1,0 +1,9 @@
+{
+  "name": "papernexus",
+  "entry": "./functions/index.js",
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "assets": {
+    "directory": "./frontend/dist"
+  }
+}

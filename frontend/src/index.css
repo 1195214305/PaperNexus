@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-stone-50 min-h-screen text-stone-800;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* 简洁的卡片样式 - 无过度圆角 */
+  .paper-card {
+    @apply relative bg-white border border-stone-200 transition-all duration-200;
+  }
+
+  .paper-card:hover {
+    @apply border-stone-400 shadow-sm;
+  }
+
+  /* 主按钮 - 简洁黑色 */
+  .btn-primary {
+    @apply px-6 py-3 bg-stone-900 text-white font-medium transition-all duration-200 hover:bg-stone-800;
+  }
+
+  /* 次要按钮 - 边框样式 */
+  .btn-secondary {
+    @apply px-6 py-3 bg-transparent text-stone-800 font-medium border border-stone-300 transition-all duration-200 hover:border-stone-500 hover:bg-stone-100;
+  }
+
+  /* 文本样式 */
+  .paper-text {
+    @apply text-base leading-relaxed text-stone-700;
+  }
+
+  /* 标题样式 */
+  .paper-title {
+    @apply text-2xl font-semibold text-stone-900 tracking-tight;
+  }
+
+  /* 标签 */
+  .paper-badge {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium tracking-wide uppercase;
+  }
+
+  /* 玻璃面板 - 简洁白色 */
+  .glass-panel {
+    @apply bg-white border border-stone-200;
+  }
+
+  /* 导航链接 */
+  .nav-link {
+    @apply text-stone-600 hover:text-stone-900 transition-colors duration-200;
+  }
+
+  .nav-link-active {
+    @apply text-stone-900 font-medium;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 优雅的下划线动画 */
+  .underline-animation {
+    position: relative;
+  }
+
+  .underline-animation::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: currentColor;
+    transition: width 0.3s ease;
+  }
+
+  .underline-animation:hover::after {
+    width: 100%;
+  }
+}
+
+/* Markdown 渲染样式 */
+.markdown-body {
+  @apply text-stone-700 leading-relaxed;
+}
+
+.markdown-body h1 {
+  @apply text-2xl font-bold text-stone-900 mt-6 mb-4;
+}
+
+.markdown-body h2 {
+  @apply text-xl font-semibold text-stone-900 mt-5 mb-3;
+}
+
+.markdown-body h3 {
+  @apply text-lg font-semibold text-stone-800 mt-4 mb-2;
+}
+
+.markdown-body p {
+  @apply mb-4;
+}
+
+.markdown-body ul, .markdown-body ol {
+  @apply mb-4 ml-6;
+}
+
+.markdown-body li {
+  @apply mb-2;
+}
+
+.markdown-body code {
+  @apply bg-stone-100 px-1.5 py-0.5 text-sm font-mono text-stone-800;
+}
+
+.markdown-body pre {
+  @apply bg-stone-100 p-4 overflow-x-auto mb-4;
+}
+
+.markdown-body pre code {
+  @apply bg-transparent p-0;
+}
+
+.markdown-body blockquote {
+  @apply border-l-4 border-stone-300 pl-4 italic text-stone-600 mb-4;
+}
+
+.markdown-body table {
+  @apply w-full border-collapse mb-4;
+}
+
+.markdown-body th, .markdown-body td {
+  @apply border border-stone-300 px-4 py-2;
+}
+
+.markdown-body th {
+  @apply bg-stone-100 font-semibold;
+}
