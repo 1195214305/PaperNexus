@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, Search, Loader2, FileText } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { uploadAndAnalyzePaper } from '../utils/api'
+import { extractTextFromPdf, truncateText } from '../utils/pdfExtractor'
 import PaperCard from './PaperCard'
 
 export default function PaperList() {
@@ -37,7 +38,19 @@ export default function PaperList() {
     setSelectedPaperId(tempPaper.id)
 
     try {
-      const result = await uploadAndAnalyzePaper(file, settings)
+      // 第一步：在前端提取PDF文本（避免边缘函数超时）
+      const extractionResult = await extractTextFromPdf(file)
+
+      // 截取文本前8000字符（避免API调用过大）
+      const truncatedText = truncateText(extractionResult.text, 8000)
+
+      // 第二步：将提取的文本发送到后端进行AI分析
+      const result = await uploadAndAnalyzePaper(
+        extractionResult.title,
+        truncatedText,
+        extractionResult.pageCount,
+        settings
+      )
 
       if (result.success && result.data) {
         updatePaper(tempPaper.id, {

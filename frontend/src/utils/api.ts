@@ -2,21 +2,27 @@ import type { ApiResponse, Paper } from '../types'
 
 const API_BASE = '/api'
 
-// 上传并分析文献
+// 上传并分析文献（使用前端提取的文本）
 export async function uploadAndAnalyzePaper(
-  file: File,
+  title: string,
+  text: string,
+  pageCount: number,
   settings: { qwenApiKey: string; qwenApiUrl: string; summaryDepth: string }
 ): Promise<ApiResponse<Paper>> {
   try {
-    const formData = new FormData()
-    formData.append('pdf', file)
-    formData.append('apiKey', settings.qwenApiKey)
-    formData.append('apiUrl', settings.qwenApiUrl)
-    formData.append('depth', settings.summaryDepth)
-
     const response = await fetch(`${API_BASE}/analyze`, {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        text,
+        pageCount,
+        apiKey: settings.qwenApiKey,
+        apiUrl: settings.qwenApiUrl,
+        depth: settings.summaryDepth,
+      }),
     })
 
     if (!response.ok) {

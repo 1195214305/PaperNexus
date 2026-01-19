@@ -1,9 +1,9 @@
 /**
  * 边缘函数: 文献分析接口
  * 路径: /api/analyze
- * 功能: 上传 PDF 并返回基础信息（不进行AI分析，避免超时）
+ * 功能: 接收前端提取的PDF文本，进行AI分析
  *
- * 优化策略：完全移除AI分析，直接返回基础信息，避免边缘函数超时
+ * 优化策略：前端使用PDF.js提取文本，后端只做AI分析，避免Base64转换超时
  */
 
 export default async function handler(request) {
@@ -26,11 +26,9 @@ export default async function handler(request) {
   }
 
   try {
-    const formData = await request.formData()
-    const pdfFile = formData.get('pdf')
-    const apiKey = formData.get('apiKey')
+    const { title, text, pageCount, apiKey, apiUrl, depth } = await request.json()
 
-    if (!pdfFile || !apiKey) {
+    if (!title || !text || !apiKey) {
       return new Response(
         JSON.stringify({ success: false, error: '缺少必要参数' }),
         {
@@ -40,35 +38,107 @@ export default async function handler(request) {
       )
     }
 
-    // 提取文件名作为标题
-    const fileName = pdfFile.name.replace('.pdf', '').replace('.PDF', '')
+    // 构建AI分析提示词
+    const analysisPrompt = `请分析以下学术论文的内容，提供详细的学术摘要。
 
-    // 直接返回基础信息，不进行AI分析（避免超时）
+论文标题：${title}
+页数：${pageCount}
+
+论文内容：
+${text}
+
+请按以下格式输出分析结果（使用JSON格式）：
+{
+  "authors": ["作者1", "作者2"],
+  "abstract": "论文摘要（200字以内）",
+  "year": 2024,
+  "overview": "研究概述（详细描述研究的核心内容、创新点和意义）",
+  "background": "研究背景（描述研究领域现状、存在的问题和研究动机）",
+  "methods": "研究方法（详细描述使用的技术、算法、实验设计等）",
+  "results": "研究结果（描述主要发现、实验数据、性能指标等）",
+  "conclusion": "研究结论（总结研究贡献、局限性和未来工作）",
+  "keyPoints": ["关键要点1", "关键要点2", "关键要点3", "关键要点4", "关键要点5"]
+}
+
+注意：
+1. 请基于实际论文内容进行分析，不要编造信息
+2. 如果无法提取某些信息，请如实说明
+3. 关键要点应该是论文中最重要的发现或贡献
+4. 输出必须是有效的JSON格式`
+
+    // 调用千问API进行分析
+    const response = await fetch(`${apiUrl || 'https://dashscope.aliyuncs.com/compatible-mode/v1'}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'qwen-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: analysisPrompt
+          }
+        ],
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`AI分析失败: ${response.status} - ${errorText}`)
+    }
+
+    const result = await response.json()
+    const aiResponse = result.choices[0].message.content
+
+    // 解析AI返回的JSON
+    let analysisData
+    try {
+      // 尝试提取JSON（AI可能返回带有markdown代码块的内容）
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        analysisData = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error('无法解析AI返回的JSON')
+      }
+    } catch (parseError) {
+      console.error('JSON解析失败:', parseError)
+      // 如果解析失败，返回基础信息
+      analysisData = {
+        authors: ['未能提取'],
+        abstract: aiResponse.substring(0, 200),
+        year: new Date().getFullYear(),
+        overview: aiResponse,
+        background: '请点击"生成学术概念图"按钮查看详细分析',
+        methods: '请点击"生成学术概念图"按钮查看详细分析',
+        results: '请点击"生成学术概念图"按钮查看详细分析',
+        conclusion: '请点击"生成学术概念图"按钮查看详细分析',
+        keyPoints: ['AI分析已完成', '点击生成学术概念图查看可视化内容']
+      }
+    }
+
+    // 构建返回数据
     const paper = {
       id: Date.now().toString(),
-      title: fileName,
-      authors: ['待补充'],
-      abstract: '请点击"生成学术概念图"按钮，AI将为您生成详细的论文分析和可视化概念图。',
-      year: new Date().getFullYear(),
+      title: title,
+      authors: analysisData.authors || ['未知'],
+      abstract: analysisData.abstract || '',
+      year: analysisData.year || new Date().getFullYear(),
       source: '上传',
       uploadedAt: new Date().toISOString(),
       status: 'completed',
       summary: {
-        overview: '📄 PDF文件已成功上传！\n\n为了避免边缘函数超时，我们采用了优化策略：\n\n1. 文件上传后立即返回基础信息\n2. 点击"生成学术概念图"按钮，AI将进行两阶段分析：\n   - 阶段1：提取论文视觉信息（核心隐喻、关键物体、流程动作）\n   - 阶段2：生成16:9学术概念图（包含研究问题、方法、流程、结果、价值）\n\n这样可以确保快速响应，同时提供高质量的学术概念图。',
-        background: '点击"生成学术概念图"按钮，AI将为您分析研究背景。',
-        methods: '点击"生成学术概念图"按钮，AI将为您分析研究方法。',
-        results: '点击"生成学术概念图"按钮，AI将为您分析研究结果。',
-        conclusion: '点击"生成学术概念图"按钮，AI将为您分析研究结论。',
-        keyPoints: [
-          '✅ PDF文件已成功上传',
-          '🎨 点击"生成学术概念图"按钮开始AI分析',
-          '📊 AI将生成包含研究问题、方法、流程、结果的可视化概念图',
-          '⏱️ 生成过程约需30-60秒，请耐心等待',
-          '🖼️ 最终将生成16:9的学术演示幻灯片插图'
-        ],
+        overview: analysisData.overview || '',
+        background: analysisData.background || '',
+        methods: analysisData.methods || '',
+        results: analysisData.results || '',
+        conclusion: analysisData.conclusion || '',
+        keyPoints: analysisData.keyPoints || [],
         generatedAt: new Date().toISOString(),
       },
-      tags: ['已上传', '待分析'],
+      tags: ['已分析', 'AI生成'],
     }
 
     return new Response(
@@ -81,11 +151,11 @@ export default async function handler(request) {
       }
     )
   } catch (error) {
-    console.error('上传失败:', error)
+    console.error('分析失败:', error)
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || '上传失败',
+        error: error.message || '分析失败',
       }),
       {
         status: 500,
