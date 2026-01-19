@@ -1,9 +1,26 @@
 {
-  "name": "papernexus",
-  "entry": "./functions/index.js",
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
-  "assets": {
-    "directory": "./frontend/dist"
+  "$schema": "https://esa.aliyun.com/schema/esa.jsonc",
+  "version": "1.0",
+  "build": {
+    "command": "npm install && npm run build",
+    "outputDirectory": "dist",
+    "rootDirectory": "frontend",
+    "nodeVersion": "22"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/functions/$1.js"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "directory": "functions",
+    "runtime": "nodejs22.x"
   }
 }
