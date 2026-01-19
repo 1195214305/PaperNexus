@@ -1,4 +1,4 @@
-import type { ApiResponse, AnalyzeRequest, Paper } from '../types'
+import type { ApiResponse, Paper } from '../types'
 
 const API_BASE = '/api'
 
