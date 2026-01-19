@@ -5,8 +5,8 @@
 
 import * as pdfjsLib from 'pdfjs-dist'
 
-// 配置 PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+// 配置 PDF.js worker - 使用 unpkg CDN（更可靠）
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
 
 export interface PdfExtractionResult {
   text: string
