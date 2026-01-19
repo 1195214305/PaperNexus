@@ -71,8 +71,9 @@ export async function askPaperQuestion(
 export async function generatePoster(
   paperId: string,
   summary: string,
+  title: string,
   settings: { qwenApiKey: string }
-): Promise<ApiResponse<{ content: string }>> {
+): Promise<ApiResponse<{ posterUrl: string }>> {
   try {
     const response = await fetch(`${API_BASE}/poster`, {
       method: 'POST',
@@ -82,6 +83,7 @@ export async function generatePoster(
       body: JSON.stringify({
         paperId,
         summary,
+        title,
         apiKey: settings.qwenApiKey,
       }),
     })

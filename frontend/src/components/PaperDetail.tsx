@@ -63,14 +63,14 @@ export default function PaperDetail() {
 
     setGeneratingPoster(true)
     try {
-      const result = await generatePoster(paper.id, paper.summary.overview, settings)
+      const result = await generatePoster(paper.id, paper.summary.overview, paper.title, settings)
       if (result.success && result.data) {
-        // 更新paper的summary，添加posterContent
+        // 更新paper的summary，添加posterUrl
         const { updatePaper } = useStore.getState()
         updatePaper(paper.id, {
           summary: {
             ...paper.summary,
-            posterContent: result.data.content,
+            posterUrl: result.data.posterUrl,
           },
         })
         alert('海报生成成功！请向下滚动查看')
@@ -153,7 +153,7 @@ export default function PaperDetail() {
         {paper.status === 'completed' && paper.summary && (
           <div className="space-y-6">
             {/* 生成海报按钮 */}
-            {!paper.summary.posterContent && (
+            {!paper.summary.posterUrl && (
               <button
                 onClick={handleGeneratePoster}
                 disabled={generatingPoster}
@@ -162,32 +162,29 @@ export default function PaperDetail() {
                 {generatingPoster ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>生成中...</span>
+                    <span>生成中（约30秒）...</span>
                   </>
                 ) : (
                   <>
                     <ImageIcon size={18} />
-                    <span>生成学术海报</span>
+                    <span>生成学术海报图片</span>
                   </>
                 )}
               </button>
             )}
 
-            {/* 学术海报内容 */}
-            {paper.summary.posterContent && (
-              <div className="paper-card p-6 bg-stone-50">
+            {/* 学术海报图片 */}
+            {paper.summary.posterUrl && (
+              <div className="paper-card p-4 bg-stone-50">
                 <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center">
                   <ImageIcon size={20} className="mr-2" />
                   学术海报
                 </h3>
-                <div className="markdown-body">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                  >
-                    {paper.summary.posterContent}
-                  </ReactMarkdown>
-                </div>
+                <img
+                  src={paper.summary.posterUrl}
+                  alt="学术海报"
+                  className="w-full rounded shadow-lg"
+                />
               </div>
             )}
 
