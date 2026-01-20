@@ -41,8 +41,8 @@ export default function PaperList() {
       // 第一步：在前端提取PDF文本（避免边缘函数超时）
       const extractionResult = await extractTextFromPdf(file)
 
-      // 截取文本前8000字符（避免API调用过大）
-      const truncatedText = truncateText(extractionResult.text, 8000)
+      // 截取文本前4000字符（避免AI分析超时）
+      const truncatedText = truncateText(extractionResult.text, 4000)
 
       // 第二步：将提取的文本发送到后端进行AI分析
       const result = await uploadAndAnalyzePaper(
